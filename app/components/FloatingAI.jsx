@@ -76,6 +76,7 @@ export default function FloatingAI() {
 
   return (
     <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
+
       {/* CHAT BOX */}
       {isOpen && (
         <div className="w-[360px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slideUp">
