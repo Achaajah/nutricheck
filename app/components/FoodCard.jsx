@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const potta = { fontFamily: "var(--font-potta-one)" };
+const patua = { fontFamily: "var(--font-patua-one)" };
+
 export default function FoodCard({ food }) {
   const [flipped, setFlipped] = useState(false);
 
@@ -31,24 +34,28 @@ export default function FoodCard({ food }) {
               className="max-h-full object-contain"
             />
           </div>
-          <h3 className="font-semibold text-gray-800 text-center">{food.name}</h3>
+          <h3 className="font-semibold text-gray-800 text-center" style={patua}>
+            {food.name}
+          </h3>
         </div>
       ) : (
         /* BELAKANG - Detail Gizi */
         <div>
-          <h3 className="font-bold text-gray-800 text-center text-base mb-4">
+          <h3 className="font-bold text-gray-800 text-center text-base mb-4" style={potta}>
             Kandungan Gizi
           </h3>
           <div className="flex flex-col gap-2">
             {food.gizi?.map((item, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
-                <span className="text-gray-700 font-medium w-24">{item.label}</span>
-                <span className="font-bold text-gray-900 w-10 text-right">{item.value}</span>
-                <span className="text-gray-400 w-8 text-left ml-1">{item.satuan}</span>
+                <span className="text-gray-700 font-medium w-24" style={patua}>{item.label}</span>
+                <span className="font-bold text-gray-900 w-10 text-right" style={patua}>{item.value}</span>
+                <span className="text-gray-400 w-8 text-left ml-1" style={patua}>{item.satuan}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-400 text-center mt-4">Klik untuk kembali</p>
+          <p className="text-xs text-gray-400 text-center mt-4" style={patua}>
+            Klik untuk kembali
+          </p>
         </div>
       )}
     </div>

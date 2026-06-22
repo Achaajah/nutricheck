@@ -14,11 +14,35 @@ const KETERANGAN_AKTIVITAS = {
   Tinggi: "Aktivitas fisik berat setiap hari",
 };
 
-const PRIORITY_FIELDS = {
+// Field wajib per program + label untuk pesan error
+const REQUIRED_FIELDS = {
   Umum: [],
-  "Reduce Sugar": ["gula", "karbohidratTotal", "kalori", "serat"],
-  "Low Fat": ["lemakTotal", "lemakJenuh", "lemakTrans", "kalori"],
-  "Muscle Gain": ["protein", "karbohidratTotal", "mineral", "kalori"],
+  "Reduce Sugar": [
+    { field: "gula", label: "Gula" },
+    { field: "karbohidratTotal", label: "Karbohidrat Total" },
+    { field: "serat", label: "Serat" },
+    { field: "kalori", label: "Kalori" },
+  ],
+  "Low Fat": [
+    { field: "lemakTotal", label: "Lemak Total" },
+    { field: "lemakJenuh", label: "Lemak Jenuh" },
+    { field: "lemakTrans", label: "Lemak Trans" },
+    { field: "kalori", label: "Kalori" },
+  ],
+  "Muscle Gain": [
+    { field: "protein", label: "Protein" },
+    { field: "karbohidratTotal", label: "Karbohidrat Total" },
+    { field: "mineral", label: "Mineral" },
+    { field: "kalori", label: "Kalori" },
+  ],
+};
+
+// Deskripsi tiap program
+const PROGRAM_DESC = {
+  Umum: "Isi kandungan gizi bebas sesuai kebutuhan.",
+  "Reduce Sugar": "Program ini fokus mengurangi asupan gula. Field bertanda * wajib diisi.",
+  "Low Fat": "Program ini fokus mengurangi lemak. Field bertanda * wajib diisi.",
+  "Muscle Gain": "Program ini fokus membangun otot. Field bertanda * wajib diisi.",
 };
 
 const DEFAULT_GIZI = {
@@ -34,6 +58,30 @@ const DEFAULT_GIZI = {
 const potta = { fontFamily: "var(--font-potta-one)" };
 const patua = { fontFamily: "var(--font-patua-one)" };
 
+function GiziInput({ field, satuan, placeholder, gizi, onChange, isError }) {
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        type="number"
+        value={gizi[field]}
+        onChange={(e) => onChange(field, e.target.value)}
+        placeholder={placeholder || "0"}
+        style={patua}
+        className={`w-full border rounded-lg px-2 py-1 text-xs outline-none transition
+          ${isError ? "border-red-400 bg-red-50 focus:border-red-500" : "border-gray-200 focus:border-green-400"}`}
+      />
+      <span className="text-xs text-gray-400 whitespace-nowrap" style={patua}>{satuan}</span>
+    </div>
+  );
+}
+
+const statusConfig = {
+  "Makanan Sehat": { color: "text-green-600", icon: "✅", bg: "bg-green-50" },
+  "Perlu Perhatian": { color: "text-yellow-500", icon: "⚠️", bg: "bg-yellow-50" },
+  "Tidak Direkomendasikan": { color: "text-red-500", icon: "❌", bg: "bg-red-50" },
+  Error: { color: "text-red-500", icon: "❌", bg: "bg-red-50" },
+};
+
 export default function KalkulatorPage() {
   const [fitur, setFitur] = useState("Umum");
   const [usia, setUsia] = useState("");
@@ -44,11 +92,17 @@ export default function KalkulatorPage() {
   const [gizi, setGizi] = useState(DEFAULT_GIZI);
   const [hasil, setHasil] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorFields, setErrorFields] = useState([]);
 
-  const isPriority = (field) => PRIORITY_FIELDS[fitur]?.includes(field);
+  const isPriority = (field) => REQUIRED_FIELDS[fitur]?.some((r) => r.field === field);
+  const isError = (field) => errorFields.includes(field);
 
   const handleGiziChange = (field, value) => {
     setGizi((prev) => ({ ...prev, [field]: value }));
+    // Hapus error field saat user mulai isi
+    if (errorFields.includes(field)) {
+      setErrorFields((prev) => prev.filter((f) => f !== field));
+    }
   };
 
   const handleAnalisis = async () => {
@@ -56,6 +110,19 @@ export default function KalkulatorPage() {
       alert("Lengkapi semua data diri terlebih dahulu!");
       return;
     }
+
+    // Validasi field wajib per program
+    const required = REQUIRED_FIELDS[fitur] || [];
+    const emptyRequired = required.filter((r) => !gizi[r.field] && gizi[r.field] !== 0);
+
+    if (emptyRequired.length > 0) {
+      setErrorFields(emptyRequired.map((r) => r.field));
+      const labels = emptyRequired.map((r) => r.label).join(", ");
+      alert(`Program "${fitur}" membutuhkan field berikut: ${labels}`);
+      return;
+    }
+
+    setErrorFields([]);
     setIsLoading(true);
     setHasil(null);
 
@@ -119,29 +186,9 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
   const handleReset = () => {
     setHasil(null);
     setGizi(DEFAULT_GIZI);
+    setErrorFields([]);
     setUsia(""); setBeratBadan(""); setTinggiBadan("");
     setJenisKelamin(""); setAktivitas("");
-  };
-
-  const GiziInput = ({ field, satuan, placeholder }) => (
-    <div className="flex items-center gap-1">
-      <input
-        type="number"
-        value={gizi[field]}
-        onChange={(e) => handleGiziChange(field, e.target.value)}
-        placeholder={placeholder || "0"}
-        style={patua}
-        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-green-400"
-      />
-      <span className="text-xs text-gray-400 whitespace-nowrap" style={patua}>{satuan}</span>
-    </div>
-  );
-
-  const statusConfig = {
-    "Makanan Sehat": { color: "text-green-600", icon: "✅", bg: "bg-green-50" },
-    "Perlu Perhatian": { color: "text-yellow-500", icon: "⚠️", bg: "bg-yellow-50" },
-    "Tidak Direkomendasikan": { color: "text-red-500", icon: "❌", bg: "bg-red-50" },
-    Error: { color: "text-red-500", icon: "❌", bg: "bg-red-50" },
   };
 
   return (
@@ -150,8 +197,8 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
       <div className="px-6 lg:px-10 pt-6 pb-10">
         <div className="flex gap-6 items-start">
           <Sidebar />
-
           <div className="flex-1 flex flex-col gap-6">
+
             {/* HEADER */}
             <div className="bg-white rounded-2xl px-8 pt-8 pb-4 shadow-sm">
               <h1 className="text-3xl font-extrabold" style={potta}>Karkulator Gizi</h1>
@@ -163,9 +210,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
               {/* KIRI - DATA DIRI */}
               <div className="bg-white rounded-2xl p-6 shadow-sm w-72 flex flex-col gap-4">
                 <div>
-                  <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}>
-                    <span>❖</span> Data Diri
-                  </p>
+                  <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}><span>❖</span> Data Diri</p>
                   <p className="text-xs text-gray-400 mt-1" style={patua}>Masukkan data diri Anda!</p>
                 </div>
 
@@ -174,13 +219,11 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <input type="number" value={usia} onChange={(e) => setUsia(e.target.value)} placeholder="0"
                     style={patua} className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
                 </div>
-
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-gray-700" style={patua}>Berat Badan (Kg)</label>
                   <input type="number" value={beratBadan} onChange={(e) => setBeratBadan(e.target.value)} placeholder="0"
                     style={patua} className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
                 </div>
-
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-gray-700" style={patua}>Tinggi Badan (cm)</label>
                   <input type="number" value={tinggiBadan} onChange={(e) => setTinggiBadan(e.target.value)} placeholder="0"
@@ -199,18 +242,32 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   {AKTIVITAS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
 
-                <select value={fitur} onChange={(e) => { setFitur(e.target.value); setHasil(null); }}
+                <select value={fitur} onChange={(e) => { setFitur(e.target.value); setHasil(null); setErrorFields([]); }}
                   style={patua} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-400 bg-white">
                   {FITUR_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
 
+                {/* INFO PROGRAM */}
+                <div className={`rounded-xl p-3 text-xs ${fitur === "Umum" ? "bg-gray-50 text-gray-500" : "bg-green-50 text-green-700"}`} style={patua}>
+                  <p className="font-bold mb-1" style={potta}>{fitur}</p>
+                  <p>{PROGRAM_DESC[fitur]}</p>
+                  {fitur !== "Umum" && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      <p className="font-semibold">Field wajib:</p>
+                      {REQUIRED_FIELDS[fitur].map((r) => (
+                        <p key={r.field} className={`flex items-center gap-1 ${isError(r.field) ? "text-red-500 font-semibold" : ""}`}>
+                          <span>{isError(r.field) ? "❌" : "✅"}</span> {r.label}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {aktivitas && (
-                  <div className="bg-green-50 rounded-xl p-3 mt-1">
+                  <div className="bg-green-50 rounded-xl p-3">
                     <p className="text-xs text-green-600 font-bold mb-2" style={potta}>Keterangan Aktivitas</p>
                     {Object.entries(KETERANGAN_AKTIVITAS).map(([k, v]) => (
-                      <p key={k} className="text-xs text-gray-600" style={patua}>
-                        <span className="font-semibold">{k}</span> : {v}
-                      </p>
+                      <p key={k} className="text-xs text-gray-600" style={patua}><span className="font-semibold">{k}</span> : {v}</p>
                     ))}
                   </div>
                 )}
@@ -219,11 +276,10 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
               {/* KANAN - KANDUNGAN GIZI */}
               <div className="bg-white rounded-2xl p-6 shadow-sm flex-1">
                 <div className="mb-4">
-                  <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}>
-                    <span>❖</span> Kandungan Gizi Makanan
-                  </p>
+                  <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}><span>❖</span> Kandungan Gizi Makanan</p>
                   <p className="text-xs text-gray-400 mt-1" style={patua}>
                     Masukkan kandungan gizi dari makanan yang ingin dianalisis (per porsi / kemasan)
+                    {fitur !== "Umum" && <span className="text-red-400 ml-1">— Field bertanda * wajib diisi</span>}
                   </p>
                 </div>
 
@@ -232,11 +288,12 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("karbohidratTotal") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Karbohidrat Total{isPriority("karbohidratTotal") ? "*" : ""}
+                      {isError("karbohidratTotal") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="karbohidratTotal" satuan="g" placeholder="250-300" />
+                    <GiziInput field="karbohidratTotal" satuan="g" placeholder="250-300" gizi={gizi} onChange={handleGiziChange} isError={isError("karbohidratTotal")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Sederhana</p><GiziInput field="karbohidratSederhana" satuan="g" placeholder="250-300" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Kompleks</p><GiziInput field="karbohidratKompleks" satuan="g" placeholder="250-300" /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Sederhana</p><GiziInput field="karbohidratSederhana" satuan="g" placeholder="250-300" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Kompleks</p><GiziInput field="karbohidratKompleks" satuan="g" placeholder="250-300" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 
@@ -244,11 +301,12 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("mineral") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Mineral{isPriority("mineral") ? "*" : ""}
+                      {isError("mineral") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="mineral" satuan="g" placeholder="100" />
+                    <GiziInput field="mineral" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("mineral")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="g" placeholder="100" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="g" placeholder="100" /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 
@@ -256,31 +314,45 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("lemakTotal") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Lemak Total{isPriority("lemakTotal") ? "*" : ""}
+                      {isError("lemakTotal") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="lemakTotal" satuan="g" placeholder="2-5" />
+                    <GiziInput field="lemakTotal" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} isError={isError("lemakTotal")} />
                     <div className="grid grid-cols-3 gap-2 mt-2">
-                      <div><p className={`text-xs mb-1 ${isPriority("lemakJenuh") ? "text-green-500 font-semibold" : "text-gray-500"}`} style={patua}>Jenuh{isPriority("lemakJenuh") ? "*" : ""}</p><GiziInput field="lemakJenuh" satuan="g" placeholder="2-5" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Tak jenuh</p><GiziInput field="lemakTakJenuh" satuan="g" placeholder="30-40" /></div>
-                      <div><p className={`text-xs mb-1 ${isPriority("lemakTrans") ? "text-green-500 font-semibold" : "text-gray-500"}`} style={patua}>Trans{isPriority("lemakTrans") ? "*" : ""}</p><GiziInput field="lemakTrans" satuan="g" placeholder="0-2" /></div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isPriority("lemakJenuh") ? "text-green-500 font-semibold" : "text-gray-500"}`} style={patua}>
+                          Jenuh{isPriority("lemakJenuh") ? "*" : ""}
+                          {isError("lemakJenuh") && <span className="text-red-400 ml-1">!</span>}
+                        </p>
+                        <GiziInput field="lemakJenuh" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} isError={isError("lemakJenuh")} />
+                      </div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Tak jenuh</p><GiziInput field="lemakTakJenuh" satuan="g" placeholder="30-40" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div>
+                        <p className={`text-xs mb-1 ${isPriority("lemakTrans") ? "text-green-500 font-semibold" : "text-gray-500"}`} style={patua}>
+                          Trans{isPriority("lemakTrans") ? "*" : ""}
+                          {isError("lemakTrans") && <span className="text-red-400 ml-1">!</span>}
+                        </p>
+                        <GiziInput field="lemakTrans" satuan="g" placeholder="0-2" gizi={gizi} onChange={handleGiziChange} isError={isError("lemakTrans")} />
+                      </div>
                     </div>
                   </div>
 
                   {/* NATRIUM */}
                   <div>
                     <p className="text-sm font-bold text-gray-700 mb-1" style={potta}>Natrium</p>
-                    <GiziInput field="natrium" satuan="g" placeholder="100" />
+                    <GiziInput field="natrium" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} />
                   </div>
 
                   {/* GULA */}
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("gula") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Gula{isPriority("gula") ? "*" : ""}
+                      {isError("gula") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="gula" satuan="g" placeholder="5-10" />
+                    <GiziInput field="gula" satuan="g" placeholder="5-10" gizi={gizi} onChange={handleGiziChange} isError={isError("gula")} />
                     <div className="grid grid-cols-3 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Laktosa</p><GiziInput field="gulaLaktosa" satuan="g" placeholder="5-10" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Glukosa</p><GiziInput field="gulaGlukosa" satuan="g" placeholder="5-10" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Fruktosa</p><GiziInput field="gulaFruktosa" satuan="g" placeholder="5-10" /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Laktosa</p><GiziInput field="gulaLaktosa" satuan="g" placeholder="5-10" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Glukosa</p><GiziInput field="gulaGlukosa" satuan="g" placeholder="5-10" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Fruktosa</p><GiziInput field="gulaFruktosa" satuan="g" placeholder="5-10" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 
@@ -288,21 +360,23 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("kalori") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Kalori{isPriority("kalori") ? "*" : ""}
+                      {isError("kalori") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="kalori" satuan="kcal" placeholder="100" />
+                    <GiziInput field="kalori" satuan="kcal" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("kalori")} />
                   </div>
 
                   {/* PROTEIN */}
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("protein") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Protein{isPriority("protein") ? "*" : ""}
+                      {isError("protein") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="protein" satuan="g" placeholder="15-25" />
+                    <GiziInput field="protein" satuan="g" placeholder="15-25" gizi={gizi} onChange={handleGiziChange} isError={isError("protein")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Hewani</p><GiziInput field="proteinHewani" satuan="g" placeholder="15-25" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Nabati</p><GiziInput field="proteinNabati" satuan="g" placeholder="15-25" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Kompleks</p><GiziInput field="proteinKompleks" satuan="g" placeholder="15-25" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Sederhana</p><GiziInput field="proteinSederhana" satuan="g" placeholder="15-25" /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Hewani</p><GiziInput field="proteinHewani" satuan="g" placeholder="15-25" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Nabati</p><GiziInput field="proteinNabati" satuan="g" placeholder="15-25" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Kompleks</p><GiziInput field="proteinKompleks" satuan="g" placeholder="15-25" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Sederhana</p><GiziInput field="proteinSederhana" satuan="g" placeholder="15-25" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 
@@ -310,13 +384,14 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("serat") ? "text-green-500" : "text-gray-700"}`} style={potta}>
                       Serat{isPriority("serat") ? "*" : ""}
+                      {isError("serat") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="serat" satuan="g" placeholder="2-5" />
+                    <GiziInput field="serat" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} isError={isError("serat")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Hemiselulosa</p><GiziInput field="seratHemiselulosa" satuan="g" placeholder="2-5" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Selulosa</p><GiziInput field="seratSelulosa" satuan="g" placeholder="2-5" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Lignin</p><GiziInput field="seratLignin" satuan="g" placeholder="2-5" /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Pektrim</p><GiziInput field="seratPektrim" satuan="g" placeholder="2-5" /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Hemiselulosa</p><GiziInput field="seratHemiselulosa" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Selulosa</p><GiziInput field="seratSelulosa" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Lignin</p><GiziInput field="seratLignin" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Pektrim</p><GiziInput field="seratPektrim" satuan="g" placeholder="2-5" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
                 </div>
@@ -351,7 +426,6 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-green-500 font-bold text-lg mb-4 text-center" style={potta}>Hasil Analisis</h2>
                 <div className="flex gap-6">
-                  {/* KALKULASI */}
                   <div className="flex-1 border border-gray-100 rounded-xl overflow-hidden">
                     <div className="grid grid-cols-2 border-b border-gray-100">
                       <div className="p-3 font-bold text-sm text-gray-700 border-r border-gray-100" style={potta}>Informasi Nilai Gizi</div>
@@ -367,8 +441,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                             </div>
                             {item.sub?.map((s, j) => (
                               <div key={j} className="flex justify-between text-xs pl-3 text-gray-400 mt-0.5" style={patua}>
-                                <span>{s.label}</span>
-                                <span>{s.nilai} {s.satuan}</span>
+                                <span>{s.label}</span><span>{s.nilai} {s.satuan}</span>
                               </div>
                             ))}
                           </div>
@@ -380,7 +453,6 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                     </div>
                   </div>
 
-                  {/* STATUS SKOR PENJELASAN */}
                   <div className="flex-1 flex flex-col gap-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div className={`${statusConfig[hasil.status]?.bg || "bg-gray-50"} rounded-xl p-4 flex flex-col items-center justify-center gap-2`}>

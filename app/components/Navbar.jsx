@@ -14,17 +14,18 @@ export default function Navbar() {
 
   return (
     <div className="w-full bg-white shadow-sm border-b">
-      <div className="flex justify-between items-center px-8 py-4">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
+      <div className="flex justify-between items-center px-4 lg:px-8 py-4">
+
+        {/* Logo - geser kanan di mobile biar ga nabrak hamburger */}
+        <div className="flex items-center gap-2 pl-10 lg:pl-0">
           <img src="/assets/img/logo.svg" alt="logo" width="40" />
           <span className="font-bold text-xl" style={{ fontFamily: "var(--font-potta-one)" }}>
             NutriCheck
           </span>
         </div>
 
-        {/* Menu */}
-        <div className="flex gap-8">
+        {/* Menu - hidden di mobile */}
+        <div className="hidden md:flex gap-4 lg:gap-8">
           {menu.map((item) => {
             const isActive = path === item.href;
             return (
