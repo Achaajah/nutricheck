@@ -14,7 +14,6 @@ const KETERANGAN_AKTIVITAS = {
   Tinggi: "Aktivitas fisik berat setiap hari",
 };
 
-// Field wajib per program + label untuk pesan error
 const REQUIRED_FIELDS = {
   Umum: [],
   "Reduce Sugar": [
@@ -37,7 +36,6 @@ const REQUIRED_FIELDS = {
   ],
 };
 
-// Deskripsi tiap program
 const PROGRAM_DESC = {
   Umum: "Isi kandungan gizi bebas sesuai kebutuhan.",
   "Reduce Sugar": "Program ini fokus mengurangi asupan gula. Field bertanda * wajib diisi.",
@@ -55,8 +53,8 @@ const DEFAULT_GIZI = {
   natrium: "", kalori: "",
 };
 
-const potta = { fontFamily: "var(--font-potta-one)" };
-const patua = { fontFamily: "var(--font-patua-one)" };
+const potta = { fontFamily: "var(--font-jakarta)" };
+const patua = { fontFamily: "var(--font-inter)" };
 
 function GiziInput({ field, satuan, placeholder, gizi, onChange, isError }) {
   return (
@@ -99,7 +97,6 @@ export default function KalkulatorPage() {
 
   const handleGiziChange = (field, value) => {
     setGizi((prev) => ({ ...prev, [field]: value }));
-    // Hapus error field saat user mulai isi
     if (errorFields.includes(field)) {
       setErrorFields((prev) => prev.filter((f) => f !== field));
     }
@@ -111,7 +108,6 @@ export default function KalkulatorPage() {
       return;
     }
 
-    // Validasi field wajib per program
     const required = REQUIRED_FIELDS[fitur] || [];
     const emptyRequired = required.filter((r) => !gizi[r.field] && gizi[r.field] !== 0);
 
@@ -194,40 +190,42 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
   return (
     <div className="bg-[#f3f4f6] min-h-screen">
       <Navbar />
-      <div className="px-6 lg:px-10 pt-6 pb-10">
+      <div className="px-4 lg:px-10 pt-6 pb-10">
         <div className="flex gap-6 items-start">
           <Sidebar />
-          <div className="flex-1 flex flex-col gap-6">
+
+          <div className="flex-1 flex flex-col gap-6 min-w-0">
 
             {/* HEADER */}
-            <div className="bg-white rounded-2xl px-8 pt-8 pb-4 shadow-sm">
-              <h1 className="text-3xl font-extrabold" style={potta}>Karkulator Gizi</h1>
-              <p className="text-gray-500 mt-1" style={patua}>Isi data diri Anda untuk menghitung kebutuhan gizi harian</p>
+            <div className="bg-white rounded-2xl px-6 lg:px-8 pt-6 lg:pt-8 pb-4 shadow-sm">
+              <h1 className="text-2xl lg:text-3xl font-extrabold" style={potta}>Kalkulator Gizi</h1>
+              <p className="text-gray-500 mt-1 text-sm" style={patua}>Isi data diri Anda untuk menghitung kebutuhan gizi harian</p>
             </div>
 
             {/* FORM AREA */}
-            <div className="flex gap-6">
-              {/* KIRI - DATA DIRI */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm w-72 flex flex-col gap-4">
+            <div className="flex flex-col lg:flex-row gap-6">
+
+              {/* DATA DIRI */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm w-full lg:w-72 flex-shrink-0 flex flex-col gap-4">
                 <div>
                   <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}><span>❖</span> Data Diri</p>
                   <p className="text-xs text-gray-400 mt-1" style={patua}>Masukkan data diri Anda!</p>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700" style={patua}>Usia (thn)</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-semibold text-gray-700 whitespace-nowrap" style={patua}>Usia (thn)</label>
                   <input type="number" value={usia} onChange={(e) => setUsia(e.target.value)} placeholder="0"
-                    style={patua} className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
+                    style={patua} className="w-24 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700" style={patua}>Berat Badan (Kg)</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-semibold text-gray-700 whitespace-nowrap" style={patua}>Berat Badan (Kg)</label>
                   <input type="number" value={beratBadan} onChange={(e) => setBeratBadan(e.target.value)} placeholder="0"
-                    style={patua} className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
+                    style={patua} className="w-24 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-gray-700" style={patua}>Tinggi Badan (cm)</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-semibold text-gray-700 whitespace-nowrap" style={patua}>Tinggi Badan (cm)</label>
                   <input type="number" value={tinggiBadan} onChange={(e) => setTinggiBadan(e.target.value)} placeholder="0"
-                    style={patua} className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
+                    style={patua} className="w-24 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-center outline-none focus:border-green-400" />
                 </div>
 
                 <select value={jenisKelamin} onChange={(e) => setJenisKelamin(e.target.value)}
@@ -273,8 +271,8 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                 )}
               </div>
 
-              {/* KANAN - KANDUNGAN GIZI */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm flex-1">
+              {/* KANDUNGAN GIZI */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm flex-1 min-w-0">
                 <div className="mb-4">
                   <p className="text-green-500 font-bold text-base flex items-center gap-2" style={potta}><span>❖</span> Kandungan Gizi Makanan</p>
                   <p className="text-xs text-gray-400 mt-1" style={patua}>
@@ -283,7 +281,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* KARBOHIDRAT */}
                   <div>
                     <p className={`text-sm font-bold mb-1 ${isPriority("karbohidratTotal") ? "text-green-500" : "text-gray-700"}`} style={potta}>
@@ -339,7 +337,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                   {/* NATRIUM */}
                   <div>
                     <p className="text-sm font-bold text-gray-700 mb-1" style={potta}>Natrium</p>
-                    <GiziInput field="natrium" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} />
+                    <GiziInput field="natrium" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} />
                   </div>
 
                   {/* GULA */}
@@ -425,7 +423,9 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
             {hasil && !isLoading && (
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-green-500 font-bold text-lg mb-4 text-center" style={potta}>Hasil Analisis</h2>
-                <div className="flex gap-6">
+
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* TABEL KALKULASI */}
                   <div className="flex-1 border border-gray-100 rounded-xl overflow-hidden">
                     <div className="grid grid-cols-2 border-b border-gray-100">
                       <div className="p-3 font-bold text-sm text-gray-700 border-r border-gray-100" style={potta}>Informasi Nilai Gizi</div>
@@ -448,13 +448,14 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                         ))}
                       </div>
                       <div className="p-3 flex items-center justify-center">
-                        <span className="text-5xl font-extrabold text-gray-800" style={potta}>{hasil.totalNilaiGizi}</span>
+                        <span className="text-4xl lg:text-5xl font-extrabold text-gray-800" style={potta}>{hasil.totalNilaiGizi}</span>
                       </div>
                     </div>
                   </div>
 
+                  {/* STATUS, SKOR, PENJELASAN */}
                   <div className="flex-1 flex flex-col gap-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className={`${statusConfig[hasil.status]?.bg || "bg-gray-50"} rounded-xl p-4 flex flex-col items-center justify-center gap-2`}>
                         <p className="text-xs text-gray-500 font-semibold" style={patua}>Status</p>
                         <span className="text-3xl">{statusConfig[hasil.status]?.icon || "✅"}</span>
@@ -488,6 +489,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>

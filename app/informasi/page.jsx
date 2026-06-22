@@ -1,9 +1,12 @@
 import Sidebar from "../components/sidebar";
 import Navbar from "../components/Navbar";
 
+const potta = { fontFamily: "var(--font-jakarta)" };
+const patua = { fontFamily: "var(--font-inter)" };
+
 export default function InformasiPage() {
   const manfaatGizi = [
-    "Memberikan energgi untuk aktivitas sehari-hari",
+    "Memberikan energi untuk aktivitas sehari-hari",
     "Mendukung pertumbuhan dan perkembangan tubuh",
     "Membantu menjaga daya tahan tubuh",
     "Menjaga fungsi organ tetap optimal",
@@ -27,34 +30,35 @@ export default function InformasiPage() {
   return (
     <div className="bg-[#f3f4f6] min-h-screen">
       <Navbar />
-      <div className="px-6 lg:px-10 pt-6">
+      <div className="px-4 lg:px-10 pt-6 pb-10">
         <div className="flex gap-6 items-start">
           <Sidebar />
-          <div className="flex-1 bg-white rounded-2xl p-8 shadow-sm flex flex-col gap-8">
+
+          <div className="flex-1 min-w-0 bg-white rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col gap-8">
 
             {/* APA ITU GIZI */}
             <section>
-              <h2 className="text-green-500 font-bold text-lg mb-3" style={{ fontFamily: "var(--font-potta-one)" }}>
-                Apa Itu Gizi ?
+              <h2 className="text-green-500 font-bold text-lg mb-3" style={potta}>
+                Apa Itu Gizi?
               </h2>
-              <p className="text-gray-800 text-base leading-relaxed" style={{ fontFamily: "var(--font-patua-one)" }}>
+              <p className="text-gray-800 text-sm lg:text-base leading-relaxed" style={patua}>
                 Gizi adalah zat yang terkandung dalam makanan dan minuman yang dibutuhkan tubuh untuk menghasilkan energi, mendukung pertumbuhan,
-                <br />memperbaiki jaringan tubuh, serta menjaga kesehatan.
+                memperbaiki jaringan tubuh, serta menjaga kesehatan.
               </p>
             </section>
 
             {/* MANFAAT GIZI */}
-            <section className="bg-[#f0faf3] rounded-2xl p-6 flex gap-8 items-start">
-              <div className="min-w-[140px]">
-                <p className="text-green-500 font-bold text-base leading-snug" style={{ fontFamily: "var(--font-potta-one)" }}>
+            <section className="bg-[#f0faf3] rounded-2xl p-5 lg:p-6 flex flex-col sm:flex-row gap-6 items-start">
+              <div className="sm:min-w-[140px]">
+                <p className="text-green-500 font-bold text-base leading-snug" style={potta}>
                   Manfaat Gizi<br />Bagi Tubuh
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-x-10 gap-y-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4 flex-1">
                 {manfaatGizi.map((item, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-blue-400 text-xl mt-0.5">💙</span>
-                    <p className="text-gray-800 text-sm leading-snug" style={{ fontFamily: "var(--font-patua-one)" }}>
+                    <p className="text-gray-800 text-sm leading-snug" style={patua}>
                       {item}
                     </p>
                   </div>
@@ -63,14 +67,14 @@ export default function InformasiPage() {
             </section>
 
             {/* KARTU NUTRISI */}
-            <section className="grid grid-cols-4 gap-4">
+            <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {nutrisi.map((item, i) => (
                 <div key={i} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col items-center text-center gap-3">
                   <span className="text-4xl">{item.icon}</span>
-                  <p className="font-bold text-gray-800 text-sm" style={{ fontFamily: "var(--font-potta-one)" }}>
+                  <p className="font-bold text-gray-800 text-sm" style={potta}>
                     {item.nama}
                   </p>
-                  <p className="text-gray-500 text-xs leading-snug" style={{ fontFamily: "var(--font-patua-one)" }}>
+                  <p className="text-gray-500 text-xs leading-snug" style={patua}>
                     {item.deskripsi}
                   </p>
                 </div>
@@ -78,14 +82,14 @@ export default function InformasiPage() {
             </section>
 
             {/* TIPS + MOTIVASI */}
-            <section className="flex gap-6 items-stretch">
+            <section className="flex flex-col sm:flex-row gap-6 items-stretch">
               <div className="bg-green-500 rounded-2xl p-6 flex-1 text-white">
-                <p className="font-bold text-base mb-3" style={{ fontFamily: "var(--font-potta-one)" }}>
+                <p className="font-bold text-base mb-3" style={potta}>
                   Tips Pola Makan Sehat
                 </p>
                 <ul className="flex flex-col gap-2">
                   {tips.map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm" style={{ fontFamily: "var(--font-patua-one)" }}>
+                    <li key={i} className="flex items-start gap-2 text-sm" style={patua}>
                       <span className="mt-0.5">•</span>
                       <span>{tip}</span>
                     </li>
@@ -94,7 +98,7 @@ export default function InformasiPage() {
               </div>
               <div className="flex-1 flex flex-col justify-center items-start gap-4 px-2">
                 <span className="text-4xl">💙</span>
-                <p className="text-gray-800 font-bold text-xl leading-snug" style={{ fontFamily: "var(--font-patua-one)" }}>
+                <p className="text-gray-800 font-bold text-lg lg:text-xl leading-snug" style={patua}>
                   Mulailah memilih makanan dengan kandungan gizi yang baik untuk mendukung kesehatan tubuh
                 </p>
               </div>
