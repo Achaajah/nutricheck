@@ -207,10 +207,7 @@ export default function Home() {
                 )}
               </div>
 
-              {/* FLOATING AI - di bawah cards */}
-              <div className="flex justify-end mt-6">
-                <FloatingAI />
-              </div>
+
             </div>
           </div>
         </div>
