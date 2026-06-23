@@ -140,7 +140,7 @@ Kandungan gizi makanan yang dikonsumsi (per porsi/kemasan):
 - Gula: ${gizi.gula || 0} g (Laktosa: ${gizi.gulaLaktosa || 0}g, Glukosa: ${gizi.gulaGlukosa || 0}g, Fruktosa: ${gizi.gulaFruktosa || 0}g)
 - Protein: ${gizi.protein || 0} g (Hewani: ${gizi.proteinHewani || 0}g, Nabati: ${gizi.proteinNabati || 0}g, Kompleks: ${gizi.proteinKompleks || 0}g, Sederhana: ${gizi.proteinSederhana || 0}g)
 - Serat: ${gizi.serat || 0} g (Hemiselulosa: ${gizi.seratHemiselulosa || 0}g, Selulosa: ${gizi.seratSelulosa || 0}g, Lignin: ${gizi.seratLignin || 0}g, Pektrim: ${gizi.seratPektrim || 0}g)
-- Mineral: ${gizi.mineral || 0} g (Makro: ${gizi.mineralMakro || 0}g, Mikro: ${gizi.mineralMikro || 0}g)
+- Mineral: ${gizi.mineral || 0} mg (Makro: ${gizi.mineralMakro || 0}mg, Mikro: ${gizi.mineralMikro || 0}mg)
 - Natrium: ${gizi.natrium || 0} mg
 
 Analisis apakah kandungan gizi ini sesuai untuk program "${fitur}" berdasarkan standar AKG Kemenkes Indonesia dan kondisi pengguna.
@@ -155,7 +155,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
     {"label": "Karbohidrat Total", "nilai": "${gizi.karbohidratTotal || 0}", "satuan": "g", "sub": [{"label": "Sederhana", "nilai": "${gizi.karbohidratSederhana || 0}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${gizi.karbohidratKompleks || 0}", "satuan": "g"}]},
     {"label": "Gula", "nilai": "${gizi.gula || 0}", "satuan": "g", "sub": [{"label": "Glukosa", "nilai": "${gizi.gulaGlukosa || 0}", "satuan": "g"}, {"label": "Fruktosa", "nilai": "${gizi.gulaFruktosa || 0}", "satuan": "g"}]},
     {"label": "Protein", "nilai": "${gizi.protein || 0}", "satuan": "g", "sub": [{"label": "Nabati", "nilai": "${gizi.proteinNabati || 0}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${gizi.proteinKompleks || 0}", "satuan": "g"}]},
-    {"label": "Mineral", "nilai": "${gizi.mineral || 0}", "satuan": "g", "sub": [{"label": "Makro", "nilai": "${gizi.mineralMakro || 0}", "satuan": "g"}, {"label": "Mikro", "nilai": "${gizi.mineralMikro || 0}", "satuan": "g"}]}
+    {"label": "Mineral", "nilai": "${gizi.mineral || 0}", "satuan": "mg", "sub": [{"label": "Makro", "nilai": "${gizi.mineralMakro || 0}", "satuan": "mg"}, {"label": "Mikro", "nilai": "${gizi.mineralMikro || 0}", "satuan": "mg"}]}
   ],
   "totalNilaiGizi": angka total kalkulasi gizi
 }
@@ -301,10 +301,10 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                       Mineral{isPriority("mineral") ? "*" : ""}
                       {isError("mineral") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="mineral" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("mineral")} />
+                    <GiziInput field="mineral" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("mineral")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 
