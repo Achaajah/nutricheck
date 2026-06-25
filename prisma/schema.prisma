@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Food {
+  id        Int         @id @default(autoincrement())
+  name      String
+  img       String
+  gizi      Gizi[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Gizi {
+  id     Int    @id @default(autoincrement())
+  label  String // contoh: "Kalori", "Protein", dll
+  value  Float  // menggunakan Float untuk mendukung desimal
+  satuan String // contoh: "kcal", "gr", "mg"
+  foodId Int
+  food   Food   @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatSession {
+  id        String    @id @default(uuid())
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  role      String   // 'user' or 'assistant'
+  content   String   @db.Text
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([sessionId])
+}

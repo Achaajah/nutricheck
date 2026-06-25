@@ -53,6 +53,190 @@ const DEFAULT_GIZI = {
   natrium: "", kalori: "",
 };
 
+const AKTIVITAS_FACTOR = { Rendah: 1.2, Sedang: 1.55, Tinggi: 1.725 };
+
+function buildPrompt(fitur, { usia, beratBadan, tinggiBadan, jenisKelamin, aktivitas }, gizi) {
+  const g = (field) => gizi[field] || 0;
+
+
+  // PROMPT, RULES AND EXPLANATION 
+  const dataSection = `Data pengguna:
+- Usia: ${usia} tahun
+- Berat Badan: ${beratBadan} kg
+- Tinggi Badan: ${tinggiBadan} cm
+- Jenis Kelamin: ${jenisKelamin}
+- Intensitas Aktivitas: ${aktivitas} (${KETERANGAN_AKTIVITAS[aktivitas]})
+- Faktor Aktivitas: ${AKTIVITAS_FACTOR[aktivitas]}
+
+Kandungan gizi makanan (per porsi/kemasan):
+- Kalori: ${g("kalori")} kcal
+- Karbohidrat Total: ${g("karbohidratTotal")} g (Sederhana: ${g("karbohidratSederhana")}g, Kompleks: ${g("karbohidratKompleks")}g)
+- Lemak Total: ${g("lemakTotal")} g (Jenuh: ${g("lemakJenuh")}g, Tak Jenuh: ${g("lemakTakJenuh")}g, Trans: ${g("lemakTrans")}g)
+- Gula Total: ${g("gula")} g (Laktosa: ${g("gulaLaktosa")}g, Glukosa: ${g("gulaGlukosa")}g, Fruktosa: ${g("gulaFruktosa")}g)
+- Protein Total: ${g("protein")} g (Hewani: ${g("proteinHewani")}g, Nabati: ${g("proteinNabati")}g, Kompleks: ${g("proteinKompleks")}g, Sederhana: ${g("proteinSederhana")}g)
+- Serat Total: ${g("serat")} g (Hemiselulosa: ${g("seratHemiselulosa")}g, Selulosa: ${g("seratSelulosa")}g, Lignin: ${g("seratLignin")}g, Pektrim: ${g("seratPektrim")}g)
+- Mineral: ${g("mineral")} g (Makro: ${g("mineralMakro")}g, Mikro: ${g("mineralMikro")}g)
+- Natrium: ${g("natrium")} mg`;
+
+  const tdeeInstruksi = `Langkah Awal — Hitung TDEE:
+- Laki-laki: BMR = 66.5 + (13.75 × BB) + (5.003 × TB) - (6.75 × Usia)
+- Perempuan: BMR = 655.1 + (9.563 × BB) + (1.850 × TB) - (4.676 × Usia)
+- TDEE = BMR × Faktor Aktivitas (${AKTIVITAS_FACTOR[aktivitas]})`;
+
+  const rules = {
+    Umum: `ATURAN EVALUASI PROGRAM "UMUM":
+
+Langkah 1: Mulai dengan Skor Awal = 100.
+
+Langkah 2: Cek Zat Jahat — kurangi poin jika melebihi batas:
+- Natrium > 150 mg per porsi → kurangi 15 poin
+- Lemak Jenuh > 4 g per porsi → kurangi 15 poin
+- Lemak Trans > 0 g (berapapun) → kurangi 30 poin
+- Gula Total > 10 g per porsi → kurangi 15 poin
+  - Sub-analisis Fruktosa: jika Fruktosa > 5 g → kurangi tambahan 5 poin
+
+Langkah 3: Cek Zat Baik — tambah poin jika memenuhi syarat:
+- Protein Total > 5 g → tambah 10 poin
+  - Sub-analisis: jika Protein Hewani atau Protein Kompleks > 0 → tambah 5 poin
+- Serat Total > 3 g → tambah 10 poin
+- Mineral Makro atau Mineral Mikro > 0 → tambah 5 poin
+
+Langkah 4: Hitung Skor Akhir = Skor Awal - total pengurangan + total penambahan.
+
+Langkah 5: Klasifikasi:
+- Skor 80–100 → status "Makanan Sehat" (Lampu Hijau)
+- Skor 50–79 → status "Perlu Perhatian" (Lampu Kuning) — sebutkan zat yang menurunkan skor
+- Skor < 50 → status "Tidak Direkomendasikan" (Lampu Merah)
+
+Konversi skor ke skala 1–10: skor = Skor Akhir / 10 (bulatkan 1 desimal, minimal 1.0).
+
+Pada hasilKalkulasi, tampilkan: skorAwal, daftarPengurangan (array of {zat, poin}), daftarPenambahan (array of {zat, poin}), skorAkhir.`,
+
+    "Reduce Sugar": `${tdeeInstruksi}
+
+ATURAN EVALUASI PROGRAM "REDUCE SUGAR":
+
+Langkah 1: Hitung Baseline:
+- Target Gula Harian (g) = (TDEE × 0.10) / 4
+- Batas Natrium Selingan = 500 mg
+
+Langkah 2: Hitung Rasio Gula:
+- Rasio Gula (%) = (Gula Total / Karbohidrat Total) × 100
+- Jika Rasio Gula > 30%, karbohidrat didominasi gula cepat serap (kualitas buruk)
+
+Langkah 3: Hitung Beban Glikemik Lokal:
+- Beban Glikemik Lokal = (Glukosa × 1.0) + (Laktosa × 0.46) + (Fruktosa × 0.19)
+
+Langkah 4: Hitung Kekuatan Rem Serat (B_total):
+- Serat Larut = Pektrim + Hemiselulosa
+- Serat Tidak Larut = Selulosa + Lignin
+- B_total = (Serat Larut × 1.0) + (Serat Tidak Larut × 0.5)
+
+Langkah 5: Filter Natrium — cek apakah Natrium > 500 mg.
+
+Langkah 6: Tentukan Status:
+- "Makanan Sehat" (Hijau): Rasio Gula ≤ 20% DAN B_total ≥ 1.0 g DAN Natrium ≤ 500 mg
+- "Perlu Perhatian" (Kuning):
+  • Kategori A: Rasio Gula ≤ 20% tetapi Natrium > 500 mg
+  • Kategori B: Rasio Gula 21–30%, atau B_total < 1.0 g
+- "Tidak Direkomendasikan" (Merah/Sugar Crash): Rasio Gula > 30% DAN B_total < 0.5 g
+
+Skor 1–10: Hijau=8–10, Kuning=5–7, Merah=1–4 (sesuaikan dalam rentang berdasarkan seberapa jauh dari ambang batas).
+
+Pada hasilKalkulasi, tampilkan: tdee, targetGulaHarian, rasioGula, bebanGlikemikLokal, seratLarut, seratTidakLarut, bTotal, natriumStatus.`,
+
+    "Low Fat": `${tdeeInstruksi}
+
+ATURAN EVALUASI PROGRAM "LOW FAT":
+
+Langkah 1: Hitung Baseline:
+- Target Kalori Diet = TDEE - 500 kcal
+- Batas Lemak Harian (g) = (Target Kalori Diet × 0.25) / 9
+- Batas Natrium Selingan = 500 mg
+
+Langkah 2: Skreening Lemak Trans:
+- Jika Lemak Trans > 0 g → LANGSUNG kunci status "Tidak Direkomendasikan" (Merah/Bahaya Mutlak), abaikan parameter lain.
+
+Langkah 3: Hitung Rasio Lemak Jenuh:
+- Rasio Lemak Jenuh (%) = (Lemak Jenuh / Lemak Total) × 100
+- Jika > 40%, makanan dinilai kurang baik (didominasi lemak padat)
+
+Langkah 4: Filter Lapis Kedua:
+- Cek Natrium > 500 mg
+- Cek Gula Total > 10 g
+
+Langkah 5: Hitung Serat Pengenyang:
+- Serat Pengenyang = Selulosa + Lignin
+
+Langkah 6: Tentukan Status:
+- "Makanan Sehat" (Diet Ideal): Kalori ≤ 35% Target Kalori Diet DAN Lemak Trans = 0 DAN Rasio Lemak Jenuh ≤ 40% DAN Natrium ≤ 500 mg DAN Serat Pengenyang ≥ 1.5 g
+- "Perlu Perhatian" (Zat Tersembunyi): Kalori & lemak total memenuhi defisit, TETAPI Rasio Lemak Jenuh > 40% ATAU Natrium > 500 mg ATAU Gula > 10 g
+- "Tidak Direkomendasikan" (Bahaya Mutlak): Lemak Trans > 0 ATAU Kalori > 50% dari Target Kalori Diet
+
+Skor 1–10: Hijau=8–10, Kuning=5–7, Merah=1–4.
+
+Pada hasilKalkulasi, tampilkan: tdee, targetKaloriDiet, batasLemakHarian, rasioLemakJenuh, seratPengenyang, persenKaloriTerhadapTarget, natriumStatus, gulaStatus.`,
+
+    "Muscle Gain": `${tdeeInstruksi}
+
+ATURAN EVALUASI PROGRAM "MUSCLE GAIN":
+
+Langkah 1: Hitung Baseline:
+- Target Kalori Surplus = TDEE + 300 kcal
+- Target Protein Harian (g) = 2 × Berat Badan (${beratBadan} kg)
+- Batas Natrium Maksimal per Porsi = 600 mg
+
+Langkah 2: Hitung Kualitas Protein:
+- Densitas Protein (%) = (Protein × 4 / Kalori) × 100
+- Rasio Protein Berkualitas (%) = ((Protein Hewani + Protein Kompleks) / Protein Total) × 100
+
+Langkah 3: Filter Lapis Kedua:
+- Cek Natrium > 600 mg
+- Cek Lemak Jenuh > 5 g
+
+Langkah 4: Analisis Perlindungan Otot:
+- Cek apakah Karbohidrat Kompleks > Karbohidrat Sederhana (Gula)
+- Cek apakah Mineral Makro > 0
+
+Langkah 5: Tentukan Status:
+- "Makanan Sehat" (Anabolik Maksimal): Densitas Protein ≥ 20% DAN Rasio Protein Berkualitas ≥ 60% DAN Natrium ≤ 600 mg DAN Lemak Jenuh ≤ 5 g
+- "Perlu Perhatian" (Dirty Bulking): Densitas Protein ≥ 20% DAN Rasio Protein Berkualitas ≥ 60%, TETAPI Natrium > 600 mg ATAU Lemak Jenuh > 5 g
+- "Tidak Direkomendasikan": Densitas Protein < 20% ATAU Rasio Protein Berkualitas < 60%
+
+Skor 1–10: Hijau=8–10, Kuning=5–7, Merah=1–4.
+
+Pada hasilKalkulasi, tampilkan: tdee, targetKaloriSurplus, targetProteinHarian, densitasProtein, rasioProteinBerkualitas, natriumStatus, lemakJenuhStatus, karboKompleksVsSederhana, mineralMakroStatus.`,
+  };
+
+  const responseFormat = `Berikan respons HANYA dalam format JSON valid berikut (tanpa teks lain, tanpa markdown):
+{
+  "status": "Makanan Sehat" atau "Perlu Perhatian" atau "Tidak Direkomendasikan",
+  "statusLabel": "label spesifik program (misal: Anabolik Maksimal, Sugar Crash, Diet Ideal, dll.)",
+  "skor": angka 1.0–10.0 (1 desimal),
+  "penjelasan": ["poin penjelasan 1", "poin 2", "poin 3", "poin 4"],
+  "hasilKalkulasi": { hasil perhitungan antara sesuai instruksi di atas },
+  "kalkulasi": [
+    {"label": "Kalori", "nilai": "${g("kalori")}", "satuan": "kcal"},
+    {"label": "Karbohidrat Total", "nilai": "${g("karbohidratTotal")}", "satuan": "g", "sub": [{"label": "Sederhana", "nilai": "${g("karbohidratSederhana")}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${g("karbohidratKompleks")}", "satuan": "g"}]},
+    {"label": "Lemak Total", "nilai": "${g("lemakTotal")}", "satuan": "g", "sub": [{"label": "Jenuh", "nilai": "${g("lemakJenuh")}", "satuan": "g"}, {"label": "Tak Jenuh", "nilai": "${g("lemakTakJenuh")}", "satuan": "g"}, {"label": "Trans", "nilai": "${g("lemakTrans")}", "satuan": "g"}]},
+    {"label": "Gula", "nilai": "${g("gula")}", "satuan": "g", "sub": [{"label": "Glukosa", "nilai": "${g("gulaGlukosa")}", "satuan": "g"}, {"label": "Fruktosa", "nilai": "${g("gulaFruktosa")}", "satuan": "g"}, {"label": "Laktosa", "nilai": "${g("gulaLaktosa")}", "satuan": "g"}]},
+    {"label": "Protein", "nilai": "${g("protein")}", "satuan": "g", "sub": [{"label": "Hewani", "nilai": "${g("proteinHewani")}", "satuan": "g"}, {"label": "Nabati", "nilai": "${g("proteinNabati")}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${g("proteinKompleks")}", "satuan": "g"}]},
+    {"label": "Serat", "nilai": "${g("serat")}", "satuan": "g", "sub": [{"label": "Hemiselulosa", "nilai": "${g("seratHemiselulosa")}", "satuan": "g"}, {"label": "Selulosa", "nilai": "${g("seratSelulosa")}", "satuan": "g"}, {"label": "Lignin", "nilai": "${g("seratLignin")}", "satuan": "g"}, {"label": "Pektrim", "nilai": "${g("seratPektrim")}", "satuan": "g"}]},
+    {"label": "Mineral", "nilai": "${g("mineral")}", "satuan": "g", "sub": [{"label": "Makro", "nilai": "${g("mineralMakro")}", "satuan": "g"}, {"label": "Mikro", "nilai": "${g("mineralMikro")}", "satuan": "g"}]},
+    {"label": "Natrium", "nilai": "${g("natrium")}", "satuan": "mg"}
+  ],
+  "totalNilaiGizi": jumlah total semua nilai gizi utama
+}`;
+
+  return `Kamu adalah sistem evaluasi gizi NutriCheck. Tugasmu adalah mengevaluasi makanan berdasarkan aturan EKSAK berikut. JANGAN gunakan pengetahuan lain, ikuti HANYA aturan di bawah ini.
+
+${dataSection}
+
+${rules[fitur]}
+
+${responseFormat}`.trim();
+}
+
 const potta = { fontFamily: "var(--font-jakarta)" };
 const patua = { fontFamily: "var(--font-inter)" };
 
@@ -122,44 +306,8 @@ export default function KalkulatorPage() {
     setIsLoading(true);
     setHasil(null);
 
-    const prompt = `
-Kamu adalah ahli gizi yang menggunakan standar AKG (Angka Kecukupan Gizi) Kemenkes Indonesia.
+    const prompt = buildPrompt(fitur, { usia, beratBadan, tinggiBadan, jenisKelamin, aktivitas }, gizi);
 
-Data pengguna:
-- Usia: ${usia} tahun
-- Berat Badan: ${beratBadan} kg
-- Tinggi Badan: ${tinggiBadan} cm
-- Jenis Kelamin: ${jenisKelamin}
-- Intensitas Aktivitas: ${aktivitas} (${KETERANGAN_AKTIVITAS[aktivitas]})
-- Program/Fitur: ${fitur}
-
-Kandungan gizi makanan yang dikonsumsi (per porsi/kemasan):
-- Kalori: ${gizi.kalori || 0} kcal
-- Karbohidrat Total: ${gizi.karbohidratTotal || 0} g (Sederhana: ${gizi.karbohidratSederhana || 0}g, Kompleks: ${gizi.karbohidratKompleks || 0}g)
-- Lemak Total: ${gizi.lemakTotal || 0} g (Jenuh: ${gizi.lemakJenuh || 0}g, Tak Jenuh: ${gizi.lemakTakJenuh || 0}g, Trans: ${gizi.lemakTrans || 0}g)
-- Gula: ${gizi.gula || 0} g (Laktosa: ${gizi.gulaLaktosa || 0}g, Glukosa: ${gizi.gulaGlukosa || 0}g, Fruktosa: ${gizi.gulaFruktosa || 0}g)
-- Protein: ${gizi.protein || 0} g (Hewani: ${gizi.proteinHewani || 0}g, Nabati: ${gizi.proteinNabati || 0}g, Kompleks: ${gizi.proteinKompleks || 0}g, Sederhana: ${gizi.proteinSederhana || 0}g)
-- Serat: ${gizi.serat || 0} g (Hemiselulosa: ${gizi.seratHemiselulosa || 0}g, Selulosa: ${gizi.seratSelulosa || 0}g, Lignin: ${gizi.seratLignin || 0}g, Pektrim: ${gizi.seratPektrim || 0}g)
-- Mineral: ${gizi.mineral || 0} g (Makro: ${gizi.mineralMakro || 0}g, Mikro: ${gizi.mineralMikro || 0}g)
-- Natrium: ${gizi.natrium || 0} mg
-
-Analisis apakah kandungan gizi ini sesuai untuk program "${fitur}" berdasarkan standar AKG Kemenkes Indonesia dan kondisi pengguna.
-
-Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
-{
-  "status": "Makanan Sehat" atau "Perlu Perhatian" atau "Tidak Direkomendasikan",
-  "skor": angka dari 1 sampai 10 dengan 1 desimal,
-  "penjelasan": ["poin 1", "poin 2", "poin 3", "poin 4"],
-  "kalkulasi": [
-    {"label": "Kalori", "nilai": "${gizi.kalori || 0}", "satuan": "kcal"},
-    {"label": "Karbohidrat Total", "nilai": "${gizi.karbohidratTotal || 0}", "satuan": "g", "sub": [{"label": "Sederhana", "nilai": "${gizi.karbohidratSederhana || 0}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${gizi.karbohidratKompleks || 0}", "satuan": "g"}]},
-    {"label": "Gula", "nilai": "${gizi.gula || 0}", "satuan": "g", "sub": [{"label": "Glukosa", "nilai": "${gizi.gulaGlukosa || 0}", "satuan": "g"}, {"label": "Fruktosa", "nilai": "${gizi.gulaFruktosa || 0}", "satuan": "g"}]},
-    {"label": "Protein", "nilai": "${gizi.protein || 0}", "satuan": "g", "sub": [{"label": "Nabati", "nilai": "${gizi.proteinNabati || 0}", "satuan": "g"}, {"label": "Kompleks", "nilai": "${gizi.proteinKompleks || 0}", "satuan": "g"}]},
-    {"label": "Mineral", "nilai": "${gizi.mineral || 0}", "satuan": "g", "sub": [{"label": "Makro", "nilai": "${gizi.mineralMakro || 0}", "satuan": "g"}, {"label": "Mikro", "nilai": "${gizi.mineralMikro || 0}", "satuan": "g"}]}
-  ],
-  "totalNilaiGizi": angka total kalkulasi gizi
-}
-    `.trim();
 
     try {
       const response = await fetch("/api/chat", {
@@ -168,7 +316,7 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
         body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
       });
       const data = await response.json();
-      const text = data.content?.[0]?.text || "";
+      const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setHasil(parsed);
@@ -460,6 +608,9 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                         <p className="text-xs text-gray-500 font-semibold" style={patua}>Status</p>
                         <span className="text-3xl">{statusConfig[hasil.status]?.icon || "✅"}</span>
                         <p className={`text-xs font-bold text-center ${statusConfig[hasil.status]?.color || "text-green-600"}`} style={patua}>{hasil.status}</p>
+                        {hasil.statusLabel && (
+                          <p className="text-[10px] text-gray-400 font-medium text-center" style={patua}>{hasil.statusLabel}</p>
+                        )}
                       </div>
                       <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
                         <p className="text-xs text-gray-500 font-semibold" style={patua}>Skor</p>
@@ -477,9 +628,25 @@ Berikan respons HANYA dalam format JSON berikut, tanpa teks lain:
                         </div>
                       </div>
                     </div>
+
+                    {/* HASIL KALKULASI ANTARA */}
+                    {hasil.hasilKalkulasi && typeof hasil.hasilKalkulasi === "object" && (
+                      <div className="bg-green-50 rounded-xl p-3">
+                        <p className="text-xs text-green-600 font-bold mb-2" style={potta}>📊 Detail Kalkulasi</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                          {Object.entries(hasil.hasilKalkulasi).map(([key, val]) => (
+                            <div key={key} className="flex justify-between text-xs" style={patua}>
+                              <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                              <span className="text-gray-800 font-semibold">{typeof val === "number" ? val.toLocaleString("id-ID", { maximumFractionDigits: 2 }) : String(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-2">
                       <span className="text-green-500 text-sm mt-0.5">ℹ️</span>
-                      <p className="text-xs text-gray-500" style={patua}>Skor dihitung berdasarkan keseimbangan zat gizi sesuai kebutuhan tubuh dan pedoman gizi seimbang</p>
+                      <p className="text-xs text-gray-500" style={patua}>Skor dihitung berdasarkan aturan evaluasi program {fitur} sesuai flow NutriCheck</p>
                     </div>
                     <button onClick={handleReset} style={patua}
                       className="w-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold py-2.5 rounded-xl text-sm">
