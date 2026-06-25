@@ -449,10 +449,10 @@ export default function KalkulatorPage() {
                       Mineral{isPriority("mineral") ? "*" : ""}
                       {isError("mineral") && <span className="text-red-400 text-xs ml-1">wajib diisi!</span>}
                     </p>
-                    <GiziInput field="mineral" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("mineral")} />
+                    <GiziInput field="mineral" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} isError={isError("mineral")} />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
-                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="g" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Makro</p><GiziInput field="mineralMakro" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
+                      <div><p className="text-xs text-gray-500 mb-1" style={patua}>Mikro</p><GiziInput field="mineralMikro" satuan="mg" placeholder="100" gizi={gizi} onChange={handleGiziChange} /></div>
                     </div>
                   </div>
 

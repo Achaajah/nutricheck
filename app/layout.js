@@ -1,5 +1,6 @@
 "use client";
 
+import FloatingAI from "./components/FloatingAI";
 import { useState } from "react";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
             {children}
           </PageTransition>
         </div>
+        {!loading && <FloatingAI />}
       </body>
     </html>
   );

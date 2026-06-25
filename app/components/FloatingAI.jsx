@@ -77,11 +77,11 @@ export default function FloatingAI() {
   };
 
   return (
-    <div className="flex flex-col items-end gap-3">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">  
 
       {/* CHAT BOX */}
       {isOpen && (
-        <div className="w-[360px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slideUp">
+        <div className="w-[90vw] max-w-[360px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-slideUp">
           {/* HEADER */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
             <span className="text-lg">✦</span>
