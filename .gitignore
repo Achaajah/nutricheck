@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma generated client
+/app/generated/prisma
+
+# ai prompt
+/agent
+
+seed.js

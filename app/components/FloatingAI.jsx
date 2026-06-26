@@ -57,7 +57,7 @@ export default function FloatingAI() {
       });
 
       const data = await response.json();
-      const reply = data.content?.[0]?.text || "Maaf, saya tidak bisa menjawab saat ini.";
+      const reply = data.choices?.[0]?.message?.content || data.content?.[0]?.text || "Maaf, saya tidak bisa menjawab saat ini.";
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages((prev) => [
