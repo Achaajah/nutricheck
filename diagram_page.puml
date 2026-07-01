@@ -1,0 +1,86 @@
+@startuml diagram_page
+
+title Activity Diagram - Home Page (app/page.js)
+
+|User / Browser|
+start
+:Membuka halaman Home;
+
+|React Component|
+:Inisialisasi state\n(foods, loading, error, search, showSearch);
+
+|React Component|
+:useEffect dipanggil\nsaat component mount;
+:setLoading(true);
+
+|API Server|
+:Mengirim request\nfetch("/api/data")P
+if (Response OK?) then (ya)
+  :Mengambil data JSON;
+
+  |React Component|
+  :setFoods(data);
+else (tidak)
+  :Throw Error\n"Gagal mengambil data makanan";
+
+  |React Component|
+  :setError(err.message);
+  :console.error();
+endif
+
+|React Component|
+:setLoading(false);
+
+|User / Browser|
+:Render halaman\n(Navbar, Sidebar, Hero);
+
+if (loading === true?) then (ya)
+  :Tampilkan\n"Memuat data makanan...";
+  stop
+else (tidak)
+endif
+
+if (error !== null?) then (ya)
+  :Tampilkan pesan error;
+  stop
+else (tidak)
+endif
+
+:Tampilkan daftar\nMakanan & Minuman;
+
+:User klik tombol\nSearch di Hero;
+
+|React Component|
+:handleSearch() dipanggil;
+:setShowSearch(true);
+:setTimeout 100ms;
+:scrollIntoView ke\nsearch section;
+:Focus pada input search;
+
+|User / Browser|
+:Tampilkan Search Bar;
+:User mengetik\nkata pencarian;
+
+|React Component|
+:setSearch(e.target.value);
+:Filter foods berdasarkan\nnama (client-side)\nfilteredFoods = foods.filter();
+
+if (filteredFoods.length > 0?) then (ya)
+  |User / Browser|
+  :Render FoodCard\nuntuk setiap item\nyang cocok;
+else (tidak)
+  |User / Browser|
+  :Tampilkan\n"Makanan tidak ditemukan";
+endif
+
+if (User klik tombol × ?) then (ya)
+  |React Component|
+  :setSearch("");
+  :Reset filter,\ntampilkan semua makanan;
+else (tidak)
+endif
+
+|User / Browser|
+stop
+
+@enduml

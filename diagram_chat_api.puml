@@ -1,0 +1,128 @@
+@startuml Activity_POST_Chat
+title Activity Diagram - POST /api/chat
+
+|Client|
+start
+:Mengirim POST request\nke /api/chat\ndengan messages/message dan sessionId;
+
+|API Route|
+:Parsing request body\nmessages, message, sessionId;
+
+if (messages adalah Array\ndan length > 0?) then (ya)
+  :Ambil pesan terakhir\nsebagai userContent;
+  :Ambil pesan sebelumnya\nsebagai chatHistory;
+else (tidak)
+  if (message adalah String?) then (ya)
+    :Set userContent = message;
+  else (tidak)
+    :userContent tetap kosong;
+  endif
+endif
+
+if (userContent kosong?) then (ya)
+  |Client|
+  :Return Error 400\nMessage tidak boleh kosong;
+  stop
+else (tidak)
+endif
+
+|Database|
+if (sessionId diberikan?) then (ya)
+  :Cari ChatSession\nberdasarkan sessionId;
+  if (Session ditemukan?) then (ya)
+    :Gunakan session\nyang ada;
+  else (tidak)
+    :Buat ChatSession baru;
+  endif
+else (tidak)
+  :Buat ChatSession baru;
+endif
+
+|Database|
+:Simpan pesan user\nke tabel Message;
+
+|API Route|
+if (chatHistory kosong\ndan session punya messages?) then (ya)
+  |Database|
+  :Ambil history dari\ndatabase session.messages;
+else (tidak)
+endif
+
+|AI Service|
+:Kirim request ke\nOpenRouter API\nmodel gpt-oss-20b;
+
+note right
+  Messages yang dikirim:
+  1. SYSTEM_PROMPT
+  2. chatHistory
+  3. User message
+end note
+
+:Terima response\ndari AI;
+
+|API Route|
+:Ambil assistantText dari\naiResponse.choices;
+
+|Database|
+:Simpan pesan assistant\nke tabel Message;
+
+:Update timestamp\nChatSession;
+
+|Client|
+:Return JSON Response\nchoices, sessionId, messageId;
+stop
+@enduml
+== GET /api/chat ==
+
+|Client|
+start
+:Mengirim GET request\nke /api/chat dengan sessionId;
+
+|API Route|
+:Parsing searchParams\nambil sessionId;
+
+if (sessionId tidak ada?) then (ya)
+  |Client|
+  :Return Error 400\nsessionId diperlukan;
+  stop
+else (tidak)
+endif
+
+|Database|
+:Cari ChatSession\nberdasarkan sessionId\ninclude messages;
+
+if (Session tidak ditemukan?) then (ya)
+  |Client|
+  :Return Error 404\nSession tidak ditemukan;
+  stop
+else (tidak)
+endif
+
+|Client|
+:Return JSON Response\nmessages dan sessionId;
+stop
+
+== DELETE /api/chat ==
+
+|Client|
+start
+:Mengirim DELETE request\nke /api/chat dengan sessionId;
+
+|API Route|
+:Parsing searchParams\nambil sessionId;
+
+if (sessionId tidak ada?) then (ya)
+  |Client|
+  :Return Error 400\nsessionId diperlukan;
+  stop
+else (tidak)
+endif
+
+|Database|
+:Hapus ChatSession\nbeserta semua messages;
+
+|Client|
+:Return JSON Response\nsuccess true;
+stop
+
+@enduml

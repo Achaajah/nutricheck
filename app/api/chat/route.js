@@ -58,7 +58,7 @@ Jika ditanya tentang kondisi medis, selalu rekomendasikan untuk berkonsultasi de
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { messages, message, sessionId } = body
+    const { messages, message, sessionId, mode } = body
 
     let userContent = ""
     let chatHistory = []
@@ -78,6 +78,33 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Message tidak boleh kosong' }, { status: 400 })
     }
 
+    // Mode kalkulator: skip session/DB, kirim prompt langsung tanpa SYSTEM_PROMPT chat
+    if (mode === 'kalkulator') {
+      const aiResponse = await ai.chat.completions.create({
+        model: "google/gemma-4-31b-it:free",
+        messages: [
+          {
+            role: "user",
+            content: userContent.trim()
+          }
+        ]
+      })
+
+      const assistantText = aiResponse.choices[0]?.message?.content || ""
+
+      return NextResponse.json({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: assistantText,
+            },
+          },
+        ],
+      })
+    }
+
+    // === Mode chat biasa ===
     // Ambil atau buat session baru
     let session = null
     if (sessionId) {
@@ -113,7 +140,7 @@ export async function POST(request) {
 
     // Panggil AI API
     const aiResponse = await ai.chat.completions.create({
-      model: "openai/gpt-oss-20b:free",
+      model: "google/gemma-4-31b-it:free",
       messages: [
         {
           role: "system",

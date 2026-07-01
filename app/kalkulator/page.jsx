@@ -313,15 +313,43 @@ export default function KalkulatorPage() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], mode: "kalkulator" }),
       });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
       const data = await response.json();
       const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || "";
-      const clean = text.replace(/```json|```/g, "").trim();
+
+      if (!text || text.trim() === "") {
+        throw new Error("AI mengembalikan response kosong. Coba lagi.");
+      }
+
+      // Robust JSON extraction: handle markdown code blocks and extra text
+      let clean = text;
+      // Remove markdown code fences (```json ... ``` or ``` ... ```)
+      clean = clean.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
+
+      // If there's extra text around the JSON, try to extract just the JSON object
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        clean = jsonMatch[0];
+      } else {
+        throw new Error("AI response tidak mengandung JSON valid. Raw: " + text.slice(0, 200));
+      }
+
       const parsed = JSON.parse(clean);
       setHasil(parsed);
-    } catch {
-      setHasil({ status: "Error", skor: 0, penjelasan: ["Terjadi kesalahan saat menganalisis."], kalkulasi: [], totalNilaiGizi: 0 });
+    } catch (err) {
+      setHasil({
+        status: "Error",
+        skor: 0,
+        penjelasan: [err.message || "Terjadi kesalahan saat menganalisis.", "Silakan coba lagi — model AI mungkin sedang sibuk."],
+        kalkulasi: [],
+        totalNilaiGizi: 0,
+      });
     } finally {
       setIsLoading(false);
     }
